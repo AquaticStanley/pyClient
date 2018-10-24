@@ -3,7 +3,7 @@ import socket
 import threading
 from tkinter import *
 
-MAX_MESSAGES = 50
+MAX_MESSAGES = 10
 
 class Window(Frame):
     def __init__(self, master=None):
@@ -20,10 +20,10 @@ class Window(Frame):
       self.pack(fill=BOTH, expand=1)
 
       # creating a button instance
-      quitButton = Button(self, text="Quit", command=self.client_exit)
+      # quitButton = Button(self, text="Quit", command=self.client_exit)
 
       # placing the button on my window
-      quitButton.place(x=0, y=0)
+      # quitButton.place(x=0, y=0)
 
     def client_exit(self):
       global client_socket
@@ -66,11 +66,14 @@ def assignConstants():
 
 def readthread(client_socket):
   while True:
+    global message_list
     readData = ''
     readData = client_socket.recv(1024)
     readData = readData.decode('utf-8',errors='ignore')
     readData = readData.split('\0')[0]
-    app.addMessage(readData)
+    message_list.insert(END, readData)
+    if message_list.size() > MAX_MESSAGES:
+      message_list.delete(0)
     print(readData)
 
 def print_text():
@@ -102,11 +105,6 @@ print("Success!")
 # Send username to use
 client_socket.send((USERNAME + '\0').encode())
 
-# Make new thread to read on
-read_thread = threading.Thread(target=readthread, args = (client_socket,))
-read_thread.setDaemon(True)
-read_thread.start()
-
 # Set up GUI
 # Initialize window
 root = Tk()
@@ -120,5 +118,14 @@ entry.focus_set()
 
 sendButton = Button(root, text="send", command=print_text)
 sendButton.pack(side='bottom')
+
+message_list = Listbox(root, height=15, width=50)
+message_list.bindtags((message_list, root, "all"))
+message_list.pack()
+
+# Make new thread to read on
+read_thread = threading.Thread(target=readthread, args = (client_socket,))
+read_thread.setDaemon(True)
+read_thread.start()
 
 root.mainloop()
